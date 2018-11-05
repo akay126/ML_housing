@@ -1,0 +1,8 @@
+Try many different models
+
+Don't worry too much about dropping features
+
+Remember that Lasso regression (in Elastic Nets) does the variable selection  for you
+
+For loop to plot boxplots or scatter plots depending on the variable class
+
