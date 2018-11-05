@@ -27,7 +27,7 @@ house.data %>%
   geom_qq_line(aes(sample=SalePrice), distribution = qexp,
                col= 'red')
 
-# cHECKOUT THE TRANSFORMED TARGET VARIABLE
+# CHECKOUT THE TRANSFORMED TARGET VARIABLE
 house.data %>% 
   mutate(SalePrice = log(SalePrice)) %>% 
   ggplot() +
@@ -35,30 +35,40 @@ house.data %>%
   geom_qq(aes(sample=SalePrice)) +
   geom_qq_line(aes(sample=SalePrice), col= 'red')
 
+house.data %>% 
+  ggplot(aes(YearBuilt,SalePrice)) + 
+  geom_point()
+
 # SUMMARY OF THE ENTIRE DATASET
-ggplotly(
-  house.data %>% 
-    ggplot(aes(YrSold,SalePrice)) + 
-    geom_point()
-)
+column.names <- colnames(house.data)
+column.classes <- sapply(house.data[,-81], class)
 
-# INITIAL MODEL
+select(house.data,2,81) %>% 
+  head(.)
 
-model.first <- lm(log(SalePrice) ~ MSZoning + LotFrontage + LotArea + OverallQual + 
-                    OverallCond + YearBuilt + YearRemodAdd + TotalBsmtSF + 
-                    FullBath + KitchenQual + TotRmsAbvGrd,
-                  data = house.data)
 
-summary(model.first)
-plot(model.first)
+
+i <- 3
+for (i in 2:5){
+  if (column.classes[i] == "factor") {
+    select(house.data,i,81) %>% 
+      ggplot() +
+      geom_boxplot(aes(x=column.names[i],y=house.data$SalePrice))
+    print("fact")
+  }
+  if (column.classes[i] == "integer") {
+    print("int")
+  }
+  print(i)
+}
+
+house.data[,2]
+
+ggplot(house.data) + geom_point(aes())
 
 house.data %>% 
   ggplot() +
-  geom_point(aes(x=YearBuilt, y = YearRemodAdd))
-
-
-
-
-
+  geom_point(aes(x=colnames(house.data)[i],y=SalePrice)) +
+  labs(title = paste0(colnames(house.data)[i]))
 
 

@@ -1,0 +1,26 @@
+---
+title: "Visualising Housing Data"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(dplyr)
+house.data <- fread(file = "./data/train.csv", stringsAsFactors = TRUE)
+```
+
+### Let's look at all the variables in the data set
+
+```{r houses}
+
+par(mfrow=c(2,2))
+par(mar=rep(2,4))
+i <- 2
+for (i in 2:80){
+  plot(select(house.data,i,81),col='steel blue',main = paste0(colnames(house.data)[i]," NAs: ",sum(is.na(select(house.data,i)))))
+}
+```
+
