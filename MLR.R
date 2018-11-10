@@ -5,8 +5,15 @@ test = test[-1]
 data = data[-1]
 
 data$SalePrice = log10(data$SalePrice)
-data[is.na(data)] <- 'NA'
+data[is.na(data)] <- 'None'
 data1 = data.frame(data,stringsAsFactors = TRUE)
+test[is.na(test)] <- 'None'
+# class(test[,2])
+test <- test %>% mutate_if(is.character,as.factor)
+test$MSZoning
+
+class(test[,2])
+
 # data1 = data[c(1:5,7:8,10:71,75:80)]
 model.full = lm (SalePrice ~ .,data = data1)
 # colnames(data[72])
@@ -54,12 +61,15 @@ AIC(model.full,    #Model with all variables.
     bothAIC.full)
 
 summary(bothAIC.full)
-modelout = colnames(bothAIC.full$model)
-modelout = modelout[-1]
-test1 = test[,modelout]
 
-predict(bothAIC.full, test1, interval = "confidence")
-predict(bothAIC.full, test1, interval = "prediction")
+bothAIC.full$fitted.values
+modelout = colnames(forwardAIC$model)
+modelout = modelout[-1]
+test = test[,modelout]
+sum(is.na(test1[,1]))
+
+predict(forwardAIC, test)
+predict(forwardAIC, test, interval = "prediction")
 
 # SalePrice ~ MSZoning + LotArea + Street + LandContour + 
 #   LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + 
