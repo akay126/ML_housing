@@ -1,14 +1,29 @@
-data = read.csv('data/train.csv', stringsAsFactors =  FALSE)
-test = read.csv('data/test.csv' , stringsAsFactors = FALSE)
+data = read.csv('data/my_train.csv', stringsAsFactors =  TRUE)
+test = read.csv('data/my_test.csv' , stringsAsFactors = TRUE)
 
 test = test[-1]
 data = data[-1]
+summary(data)
+top = data %>% top_n(10)
+a = data[which(data$MSZoning == "C (all)"),]
 
-data$SalePrice = log10(data$SalePrice)
-data[is.na(data)] <- 'NA'
-data1 = data.frame(data,stringsAsFactors = TRUE)
+b = test[which(test$MSZoning == "C (all)"),]
+
+test = test %>% drop_na()
+
+
+colnames(data)
+
+# data[is.na(data)] <- 'None'
+# data <- data %>% mutate_if(is.character,as.factor)
+
+# class(test[,2])
+# test <- test %>% mutate_if(is.character,as.factor)
+test$MSZoning
+data$MSZoning
+
 # data1 = data[c(1:5,7:8,10:71,75:80)]
-model.full = lm (SalePrice ~ .,data = data1)
+model.full = lm (SalePrice ~ .,data = data)
 # colnames(data[72])
 # data[72] = factor(data[72])
 # class(data[,72])
@@ -54,12 +69,15 @@ AIC(model.full,    #Model with all variables.
     bothAIC.full)
 
 summary(bothAIC.full)
+
+bothAIC.full$fitted.values
 modelout = colnames(bothAIC.full$model)
 modelout = modelout[-1]
-test1 = test[,modelout]
+test = test %>% select(.,modelout)
+sum(is.na(test1[,1]))
 
-predict(bothAIC.full, test1, interval = "confidence")
-predict(bothAIC.full, test1, interval = "prediction")
+# predict.lm(forwardAIC,  type="response", se.fit=FALSE,interval = "prediction",newdata = test)
+predict(bothAIC.full, test,interval = "prediction")
 
 # SalePrice ~ MSZoning + LotArea + Street + LandContour + 
 #   LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + 
