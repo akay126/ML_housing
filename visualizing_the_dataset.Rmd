@@ -10,6 +10,38 @@ knitr::opts_chunk$set(echo = TRUE)
 library(data.table)
 library(dplyr)
 house.data <- fread(file = "./data/train.csv", stringsAsFactors = TRUE)
+my.house.data <- house.data %>% 
+  rename(FirstFlrSF = '1stFlrSF',
+         SecondFlrSF = '2ndFlrSF',
+         SsnPorch = '3SsnPorch') %>% 
+  mutate(SalePrice = log(SalePrice)) %>% 
+  mutate(GarageYrBlt = ifelse(is.na(GarageYrBlt),YearBuilt,GarageYrBlt),
+         LotFrontage = ifelse(is.na(LotFrontage),0,LotFrontage),
+         MasVnrArea = ifelse(is.na(MasVnrArea),0,MasVnrArea)) %>% 
+  mutate(Alley = factor(ifelse(is.na(Alley),"NoAlley",as.character(Alley))),
+         BsmtQual = factor(ifelse(is.na(BsmtQual),"NoBsmt",as.character(BsmtQual))),
+         BsmtCond = factor(ifelse(is.na(BsmtCond),"NoBsmt",as.character(BsmtCond))),
+         BsmtExposure = factor(ifelse(is.na(BsmtExposure),"NoBsmt",as.character(BsmtExposure))),
+         BsmtFinType1 = factor(ifelse(is.na(BsmtFinType1),"NoBsmt",as.character(BsmtFinType1))),
+         BsmtFinType2 = factor(ifelse(is.na(BsmtFinType2),"NoBsmt",as.character(BsmtFinType2))),
+         FireplaceQu = factor(ifelse(is.na(FireplaceQu),"NoFire",as.character(FireplaceQu))),
+         GarageType = factor(ifelse(is.na(GarageType),"NoGarage",as.character(GarageType))),
+         GarageFinish = factor(ifelse(is.na(GarageFinish),"NoGarage",as.character(GarageFinish))),
+         GarageQual = factor(ifelse(is.na(GarageQual),"NoGarage",as.character(GarageQual))),
+         GarageCond = factor(ifelse(is.na(GarageCond),"NoGarage",as.character(GarageCond))),
+         PoolQC = factor(ifelse(is.na(PoolQC),"NoPool",as.character(PoolQC))),
+         Fence = factor(ifelse(is.na(Fence),"NoFence",as.character(Fence))),
+         MiscFeature = factor(ifelse(is.na(MiscFeature),"None",as.character(MiscFeature)))) %>% 
+  mutate(BsmtFullBath = factor(BsmtFullBath),
+         BsmtHalfBath = factor(BsmtHalfBath),
+         FullBath = factor(FullBath),
+         HalfBath = factor(HalfBath),
+         BedroomAbvGr = factor(BedroomAbvGr),
+         KitchenAbvGr = factor(KitchenAbvGr),
+         KitchenQual = factor(KitchenQual),
+         Fireplaces = factor(Fireplaces),
+         GarageCars = factor(GarageCars),
+         YrSold = factor(YrSold))
 ```
 
 ### Let's look at all the variables in the data set
@@ -20,7 +52,9 @@ par(mfrow=c(2,2))
 par(mar=rep(2,4))
 i <- 2
 for (i in 2:80){
-  plot(select(house.data,i,81),col='steel blue',main = paste0(colnames(house.data)[i]," NAs: ",sum(is.na(select(house.data,i)))))
+  plot(select(my.house.data,i,81),col='steel blue',main = paste0(colnames(my.house.data)[i]," NAs: ",sum(is.na(select(my.house.data,i)))))
 }
 ```
+
+
 
