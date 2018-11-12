@@ -45,7 +45,7 @@ influencePlot(model.full)
 vif(model.full)
 
 avPlots
-model.empty = lm(SalePrice ~ 1, data = data1)
+model.empty = lm(SalePrice ~ 1, data = data)
 scope = list(lower = formula(model.empty), upper = formula(model.full))
 
 forwardAIC = step(model.empty, scope, direction = "forward", k = 2)
@@ -68,59 +68,80 @@ AIC(model.full,    #Model with all variables.
     bothAIC.empty,
     bothAIC.full)
 
-summary(bothAIC.full)
+summary(forwardAIC)
 
-bothAIC.full$fitted.values
-modelout = colnames(bothAIC.full$model)
+forwardAIC$fitted.values
+modelout = colnames(forwardAIC$model)
 modelout = modelout[-1]
 test = test %>% select(.,modelout)
 sum(is.na(test1[,1]))
 
 # predict.lm(forwardAIC,  type="response", se.fit=FALSE,interval = "prediction",newdata = test)
-predict(bothAIC.full, test,interval = "prediction")
+predict(forwardAIC, test,interval = "prediction")
 
-# SalePrice ~ MSZoning + LotArea + Street + LandContour + 
-#   LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + 
-#   BldgType + OverallQual + OverallCond + YearBuilt + YearRemodAdd + 
-#   RoofStyle + RoofMatl + Exterior1st + ExterCond + Foundation + 
-#   BsmtQual + BsmtCond + BsmtExposure + BsmtFinSF1 + BsmtFinSF2 + 
-#   BsmtUnfSF + Heating + HeatingQC + CentralAir + X1stFlrSF + 
-#   X2ndFlrSF + LowQualFinSF + BsmtFullBath + FullBath + HalfBath + 
-#   KitchenAbvGr + KitchenQual + TotRmsAbvGrd + Functional + 
-#   Fireplaces + GarageCars + GarageArea + GarageQual + GarageCond + 
-#   WoodDeckSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + 
-#   PoolQC + SaleType + SaleCondition
 
-# SalePrice ~ OverallQual + Neighborhood + GrLivArea + 
-#   BsmtFinType1 + GarageCars + OverallCond + RoofMatl + TotalBsmtSF + 
-#   YearBuilt + Condition2 + MSZoning + BsmtUnfSF + SaleCondition + 
-#   Functional + BldgType + CentralAir + LotArea + KitchenQual + 
-#   ScreenPorch + Condition1 + Fireplaces + Heating + BsmtExposure + 
-#   Exterior1st + YearRemodAdd + LandSlope + GarageArea + WoodDeckSF + 
-#   LotConfig + Foundation + HeatingQC + PoolQC + EnclosedPorch + 
-#   SaleType + BsmtFullBath + PoolArea + BsmtQual + GarageCond + 
-#   HalfBath + X3SsnPorch + Street + FullBath + KitchenAbvGr + 
-#   GarageQual + ExterCond + TotRmsAbvGr
-# 
-# SalePrice ~ OverallQual + Neighborhood + GrLivArea + GarageCars + 
-#   OverallCond + RoofMatl + TotalBsmtSF + YearBuilt + Condition2 + 
-#   MSZoning + BsmtUnfSF + SaleCondition + Functional + BldgType + 
-#   CentralAir + LotArea + KitchenQual + ScreenPorch + Condition1 + 
-#   Fireplaces + Heating + BsmtExposure + Exterior1st + YearRemodAdd + 
-#   LandSlope + GarageArea + WoodDeckSF + LotConfig + Foundation + 
-#   HeatingQC + PoolQC + EnclosedPorch + SaleType + BsmtFullBath + 
-#   PoolArea + X3SsnPorch + BsmtFinSF1 + HalfBath + FullBath + 
-#   GarageCond + KitchenAbvGr + Street + ExterCond + TotRmsAbvGrd + 
-#   GarageQual + BsmtQual
-# 
-# SalePrice ~ MSZoning + LotArea + Street + LandContour + LotConfig + 
-#   LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + 
-#   OverallQual + OverallCond + YearBuilt + YearRemodAdd + RoofStyle + 
-#   RoofMatl + Exterior1st + ExterCond + Foundation + BsmtQual + 
-#   BsmtCond + BsmtExposure + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + 
-#   Heating + HeatingQC + CentralAir + X1stFlrSF + X2ndFlrSF + 
-#   LowQualFinSF + BsmtFullBath + FullBath + HalfBath + KitchenAbvGr + 
-#   KitchenQual + TotRmsAbvGrd + Functional + Fireplaces + GarageCars + 
-#   GarageArea + GarageQual + GarageCond + WoodDeckSF + EnclosedPorch + 
-#   X3SsnPorch + ScreenPorch + PoolArea + PoolQC + SaleType + 
-#   SaleCondition
+###################################### Data Cleaning ####################################
+
+
+mydata = read.csv('data/my_train.csv', stringsAsFactors =  TRUE)
+
+mydata = mydata[-c(823,523),]
+mydata = mydata %>% drop_na()
+set.seed(0)
+mysample <- mydata[sample(1:nrow(mydata), nrow(mydata)*0.20, replace=FALSE),]
+mydata = mydata[-mysample$Id,]
+
+
+model_S.full = lm (SalePrice ~ .,data = mydata)
+model_S.empty = lm(SalePrice ~ 1, data = mydata)
+scope_S = list(lower = formula(model_S.empty), upper = formula(model_S.full))
+fwdAIC_S = step(model_S.empty, scope_S, direction = "forward", k = 2)
+
+summary(fwdAIC_S)
+summary(fwdAIC_S)
+plot(fwdAIC_S)
+influencePlot(fwdAIC_S)
+vif(fwdAIC_S)
+avPlots(fwdAIC_S)
+confint(fwdAIC_S)
+vif(fwdAIC_S)
+a = alias(fwdAIC_S)
+
+test_S = select(mysample,-SalePrice)
+modelout_S = colnames(fwdAIC_S$model)
+modelout_S = modelout_S[-1]
+test_S = test_S %>% select(.,modelout_S)
+yhat_S = predict(fwdAIC_S, test_S,interval = "prediction")
+y = mysample['SalePrice']
+yhat_S[,1]
+
+sqrt(mean(((yhat_S-y)**2)[,1],na.rm = T))
+
+AIC(fwdAIC_S)
+
+
+############### Bucketing #######################
+
+
+se <- sqrt(sum(fwdAIC_S$residuals^2) / fwdAIC_S$df.residual)  ## Pearson residual standard error
+hii <- lm.influence(fwdAIC_S, do.coef = FALSE)$hat  ## leverage
+std.resi <- fwdAIC_S$residuals / (se * sqrt(1 - hii))  ## standardized residuals
+## these three lines can be replaced by: std.resi <- rstandard(fwdAIC_S)
+std.resi = std.resi[which(std.resi < 100 & std.resi > -100)]
+summary(std.resi)
+
+par(mfrow = c(1,2))
+qqnorm(std.resi, main = "my Q-Q" ); qqline(std.resi, lty = 2)
+plot(fwdAIC_S, which = 2)  ## only display Q-Q plot
+hist(std.resi)
+
+buck1 = which(std.resi < quantile(std.resi)[2])
+buck2 = which(std.resi>= quantile(std.resi)[2] & std.resi <= quantile(std.resi)[4])
+buck3 = which(std.resi > quantile(std.resi)[4])
+
+buck1 = which(std.resi < -1)
+buck2 = which(std.resi >= -1 & std.resi <= 1)
+buck3 = which(std.resi > 1)
+
+
+
