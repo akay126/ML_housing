@@ -1,14 +1,18 @@
-#################### DATA MUTATION ##################
+
+#######################################################################################################################
+#######################################################################################################################
+#- DATA CLEANING - TEST SET -------------------------------------------------------------------------------------------
+
 '%!in%' <- function(x,y)!('%in%'(x,y))
-house.data <- fread(file = "./data/train.csv", stringsAsFactors = TRUE)
+house.data <- read.csv(file = "./data/test.csv", stringsAsFactors = TRUE)
 
 my.house.data <- house.data %>% 
   # mutate(YearsLastRemod = YrSold-YearRemodAdd,
   #        YearsFirstRemod = YearRemodAdd-YearBuilt) %>%
   # mutate(Remod = factor(ifelse(YearBuilt == YearRemodAdd,0,1))) %>% 
-  rename(FirstFlrSF = '1stFlrSF',
-         SecondFlrSF = '2ndFlrSF',
-         SsnPorch = '3SsnPorch') %>% 
+  rename(FirstFlrSF = 'X1stFlrSF',
+         SecondFlrSF = 'X2ndFlrSF',
+         SsnPorch = 'X3SsnPorch') %>% 
   # select(-MoSold, -YrSold, -SaleType, -SaleCondition) %>% 
   mutate(SalePrice = log(SalePrice)) %>% 
   # mutate(SalePrice = (SalePrice^lambda - 1)/lambda) %>% 
