@@ -20,6 +20,8 @@ temp.cat.house <- house.data %>%
   mutate(GarageYrBlt = ifelse(is.na(GarageYrBlt),YearBuilt,GarageYrBlt),
          LotFrontage = ifelse(is.na(LotFrontage),0,LotFrontage),
          MasVnrArea = ifelse(is.na(MasVnrArea),0,MasVnrArea)) %>% 
+  mutate(HouseStyle =  factor(gsub("[.]", "",as.character(HouseStyle))),
+         MSZoning = factor(gsub("[ ()]", "",as.character(MSZoning)))) %>% 
   mutate(Alley = factor(ifelse(is.na(Alley),"",as.character(Alley))),
          BsmtQual = factor(ifelse(is.na(BsmtQual),"",as.character(BsmtQual))),
          BsmtCond = factor(ifelse(is.na(BsmtCond),"",as.character(BsmtCond))),
@@ -43,23 +45,25 @@ temp.cat.house <- house.data %>%
          KitchenQual = factor(KitchenQual),
          Fireplaces = factor(Fireplaces),
          GarageCars = factor(GarageCars),
-         YrSold = factor(YrSold))
+         YrSold = factor(YrSold),
+         YearBuilt = factor(YearBuilt))
 
-for (i in x.class$x.name[as.character(x.class$x.class) == "factor"]){
+temp.x.class <- as.data.frame(sapply(temp.cat.house,class))
+colnames(temp.x.class)[1] <- c("x.class")
+temp.x.class <- temp.x.class %>% 
+  mutate(x.name = row.names(.))
+
+for (i in temp.x.class$x.name[as.character(temp.x.class$x.class) == "factor"]){
   temp.cat.house[,i] = factor(ifelse(as.character(temp.cat.house[,i]) == "" | temp.cat.house[,i] == 0,
                                      "",
                                      paste0(i,"",as.character(temp.cat.house[,i]))))
-  # cat.house.data[,i] = paste0(i," ",cat.house.data[,i])
 }
 
-colnames(temp.cat.house)
+cat.house.data <- temp.cat.house[,c(1:ncol(temp.cat.house))[as.character(temp.x.class$x.class) == "factor"]] %>% 
+  select(-GarageCars, -BedroomAbvGr) %>%
+  select(-YrSold)
 
-cat.house.data <- temp.cat.house[,c(1:ncol(temp.cat.house))[as.character(x.class$x.class) == "factor"]] %>% 
-  select(-Utilities, -Street, -Condition2, -RoofMatl,
-         -Heating, -KitchenAbvGr, -LandSlope, -CentralAir,
-         -Exterior2nd, -BsmtFinType2) %>% 
-  select(-YrSold, -SaleType, -SaleCondition)
-
+colnames(cat.house.data)
 head(cat.house.data)
 
 "BsmtFullBath,
@@ -71,7 +75,7 @@ KitchenAbvGr,
 Fireplaces,
 GarageCars" 
 
-View(cat.house.data)
+paste(colnames(cat.house.data),collapse = ",")
 
 write.table(cat.house.data, file = "./data/cat_house_data.csv",sep=",",row.names = FALSE)
 
@@ -120,17 +124,19 @@ itemFrequencyPlot(categorical.house.data, topN = 20)
 #Using the apriori() function to look for association rules using the Apriori
 #algorithm.
 apriori(categorical.house.data,
-        parameter = list(support = .25,     #Default minimum support.
-                         confidence = .7,  #Default minimum confidence.
-                         minlen = 2,       #Default minimum set size.
-                         maxlen = 35))     #Default maximum set size.
+        parameter = list(support = 0.09,
+                         confidence = 0.8,
+                         minlen = 2,
+                         maxlen = 4,
+                         maxtime = 10))
 
 #Creating some rules by lowering the support and confidence.
 houserules = apriori(categorical.house.data,
-                       parameter = list(support = 0.25,
-                                        confidence = 0.5,
+                       parameter = list(support = 0.02,
+                                        confidence = 0.8,
                                         minlen = 2,
-                                        maxlen = 35))
+                                        maxlen = 4,
+                                        maxtime = 10))
 
 #Investigating summary information about the rule object.
 houserules
@@ -143,42 +149,54 @@ inspect(houserules[1:5])
 #Sorting the rules by various metrics.
 inspect(sort(houserules, by = "support")[1:5])
 inspect(sort(houserules, by = "confidence")[1:5])
-inspect(sort(houserules, by = "lift")[6:10])
+inspect(sort(houserules, by = "lift")[1:5])
 
+milkrules = subset(houserules, support > 0.05)
+inspect(sort(milkrules, by = "lift")[1:7])
 #Finding subsets of rules based on a particular item.
 
-berryrules = subset(houserules, items %in% "FullBath-1" & 
-                      items %!in% c("ExterQual-Gd","Foundation-PConc","Foundation-CBlock","BsmtQual-TA"))
-inspect(sort(berryrules, by = "lift")[1:5])
+berryrules = subset(houserules,  items %pin% "YearBuilt" & lift > 2)
+inspect(sort(berryrules, by = "support")[1:5])
 
-herbs <- as.character(sort(unique(cat.house.data$Neighborhood)))
-herbrules = subset(houserules, items %in% "FullBath-2")
-# inspect(herbrules)
-inspect(sort(herbrules, by = "lift")[1:5])
+berryrules2 = subset(berryrules,  items %!in% "YearBuilt2006")
+inspect(sort(berryrules2, by = "lift")[1:5])
+
+herbrules = subset(houserules, subset = lhs %pin% "Neighborhood" &
+                     lift > 2)
+inspect(sort(herbrules, by = "support")[1:5])
+
+herbrules2 = subset(herbrules, items %!in% "NeighborhoodSomerst")
+inspect(sort(herbrules2, by = "support")[1:5])
 
 ###############################
 #####Tools for Naïve Bayes#####
 ###############################
 #Reading in the raw data into a data frame; ensuring that the strings
 #aren't converted to factors.
-raw.house.data <- unite(cat.house.data, col = "house", sep = " ")
+# SalePrice.median <- quantile(my.house.data$SalePrice,0.5)
+LotArea.groups <- quantile(my.house.data$LotArea)
+LotArea.median <- quantile(my.house.data$LotArea,0.5)
 
-#Examining the structure of the data; two columns, one of the actual text itself
-#and one displaying whether or not the observation is spam.
-str(raw.house.data)
+raw.house.data <- cat.house.data %>% 
+  select(-MSZoning) %>% 
+  unite(.,col = "house", sep = " ") %>%
+  # mutate(PriceType = my.house.data$SalePrice) %>%
+  # mutate(PriceType = ifelse(PriceType > SalePrice.median,"High","Low"))
+  mutate(LotArea = my.house.data$LotArea) %>%
+  mutate(LotArea = ifelse(LotArea > LotArea.median,"High","Low"))
 
 #Overwriting the type variable to convert it to a factor.
-raw.house.data$type = as.factor(raw.house.data$type)
+# raw.house.data$PriceType = as.factor(raw.house.data$PriceType)
 
-#Inspecting the new type variable.
-str(raw.house.data$type)
-table(raw.house.data$type)
+#Inspecting the new PriceType variable.
+# table(raw.house.data$PriceType)
+table(raw.house.data$LotArea)
 
 #Installing the Text Mining package for the purpose of processing text data
 #for analysis; installing the SnoballC library for stemming purposes.
 library(tm)
 library(SnowballC)
-
+library(RColorBrewer)
 #Creating a corpus with the text message data; VectorSource() interprets each
 #element of the vector that it is passed as an individual document.
 house_corpus = Corpus(VectorSource(raw.house.data$house))
@@ -186,26 +204,19 @@ house_corpus = Corpus(VectorSource(raw.house.data$house))
 #Examining the overall contents of the SMS corpus.
 house_corpus
 
-#Examining the specific contents of the SMS corpus; converting the plain text
-#documents to character strings.
-tm::inspect(house_corpus[1:3])
-lapply(house_corpus[1:3], as.character)
-
-#Loading the wordcloud library to help visualize our corpus data.
-library(wordcloud)
-wordcloud(house_corpus, min.freq = 50) #Freq. of about 1% of the documents.
-wordcloud(house_corpus, min.freq = 50, random.order = FALSE) #Order by frequency.
-
 #Subsetting the data into spam and ham groups.
-spam = subset(raw.house.data, type == "spam")
-ham = subset(raw.house.data, type == "ham")
+High = subset(raw.house.data, LotArea == "High")
+Low = subset(raw.house.data, LotArea == "Low")
 
 #The wordcloud() function is versatile enough to automatically apply some text
 #transformation and tokenization processes to raw data; we will transform our
 #raw data for modeling purposes in a moment.
-wordcloud(spam$text, max.words = 40)
-wordcloud(ham$text, max.words = 40)
-
+# library(wordcloud)
+# pal2 <- brewer.pal(8,"Dark2")
+# par(mfrow=c(1,2))
+# wordcloud(High$house,min.freq = 30)
+# wordcloud(Low$house,min.freq = 30)
+# par(mfrow=c(1,1))
 #Cleaning up the SMS corpus by performing transformations of the text data; converting
 #all characters to lowercase, removing numbers, removing stopwords, removing punctuation,
 #and stemming words. Creating a sparse document term matrix; this is called tokenization.
@@ -219,15 +230,16 @@ house_dtm = DocumentTermMatrix(house_corpus, control = list(
 
 #Creating training and test sets with a 75% - 25% split; the observations are
 #listed in random order.
-house_dtm_train = house_dtm[1:1150, ]
-sms_train_labels = raw.house.data[1:4169, ]$type
-house_dtm_test = house_dtm[4170:5559, ]
-sms_test_labels  = raw.house.data[4170:5559, ]$type
+train = sample(1:nrow(my.house.data), 0.7*nrow(my.house.data))
+house_dtm_train = house_dtm[train, ]
+house_train_labels = raw.house.data[train, ]$LotArea
+house_dtm_test = house_dtm[-train, ]
+house_test_labels  = raw.house.data[-train, ]$LotArea
 
 #Checking that the proportion of spam and non-spam messages is similar among
 #the training and test sets.
-prop.table(table(sms_train_labels))
-prop.table(table(sms_test_labels))
+prop.table(table(house_train_labels))
+prop.table(table(house_test_labels))
 
 #Removing terms that are extremely sparse; terms that do not appear in 99.9% of
 #the data.
@@ -238,13 +250,13 @@ house_dtm_freq_train #After
 #Displaying indicator features for frequent words (those that appear in at
 #least approximately 0.1% of the text messages); saving the terms as a character
 #vector.
-findFreqTerms(house_dtm_train, 5)
-sms_freq_words = findFreqTerms(house_dtm_train, 5)
-str(sms_freq_words)
+# findFreqTerms(house_dtm_train, 5)
+house_freq_words = findFreqTerms(house_dtm_train, 5)
+str(house_freq_words)
 
 #Create sparse document term matrices with only the frequent terms.
-house_dtm_freq_train = house_dtm_train[, sms_freq_words]
-house_dtm_freq_test = house_dtm_test[, sms_freq_words]
+house_dtm_freq_train = house_dtm_train[, house_freq_words]
+house_dtm_freq_test = house_dtm_test[, house_freq_words]
 
 #Since the Naïve Bayes classifier is typically trained on data with categorical
 #features, we need to change each of the counts to indicators.
@@ -254,37 +266,38 @@ convert_counts = function(x) {
 
 #Using the apply() function to convert the counts to indicators in the columns
 #of both the training and the test data.
-sms_train = apply(house_dtm_freq_train, 2, convert_counts)
-sms_test = apply(house_dtm_freq_test, 2, convert_counts)
+house_train = apply(house_dtm_freq_train, 2, convert_counts)
+house_test = apply(house_dtm_freq_test, 2, convert_counts)
 
 #Inspecting the final matrices.
-head(sms_train)
-summary(sms_train)
+# head(house_train)
+summary(house_train)
 
 #Loading the e1071 library in order to implement the Naïve Bayes classifier.
 library(e1071)
 
 #Applying the naiveBayes() classifier function to the training data.
-sms_classifier = naiveBayes(sms_train, sms_train_labels)
-sms_classifier
+house_classifier = naiveBayes(house_train, house_train_labels)
+# house_classifier
 
 #Evaluating the model performance by predicting the test observations.
-sms_test_pred = predict(sms_classifier, sms_test)
-sms_test_pred
+house_test_pred = predict(house_classifier, house_test)
 
 #Creating a confusion matrix of the actual and predicted labels.
-table(sms_test_pred, sms_test_labels)
-(1201 + 153)/1390
+bayes.confusion <- table(house_test_pred, house_test_labels)
+bayes.confusion
+(bayes.confusion[1,1]+bayes.confusion[2,2])/sum(bayes.confusion)
 
 #Directly out-of-the-box, the Naïve Bayes classifier performs extremely well,
 #even when the assumptions are quite unrealistic. We only have an error rate
 #of about 2.6%!
 
 #Applying the Laplace estimator and inspecting the accuracy.
-sms_classifier2 = naiveBayes(sms_train, sms_train_labels, laplace = 1)
-sms_test_pred2 = predict(sms_classifier2, sms_test)
-table(sms_test_pred2, sms_test_labels)
-(1202 + 155)/1390
+house_classifier2 = naiveBayes(house_train, house_train_labels, laplace = 1)
+house_test_pred2 = predict(house_classifier2, house_test)
+bayes.confusion <- table(house_test_pred2, house_test_labels)
+bayes.confusion
+(bayes.confusion[1,1]+bayes.confusion[2,2])/sum(bayes.confusion)
 
 #Using the Laplace estimator, the error rate decreases slightly to about 2.4%;
-#there was a slight reduction in both types of errors.
+#there was a slight reduction in both LotAreas of errors.
