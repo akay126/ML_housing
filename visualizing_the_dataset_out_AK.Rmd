@@ -1,0 +1,34 @@
+---
+title: "Visualising Housing Data"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(dplyr)
+data = read.csv('data/my_train.csv',header = TRUE)
+data = data[,names(sort(unlist(lapply(data, class)), decreasing = T))]
+rm_data =c(1299,524,336,314,633,3,250,1424,1183,707,899,496,452,31,1329,54)
+my.house.data =data[- rm_data,]
+my.rm.data =data[rm_data,]
+
+```
+
+### Let's look at all the variables in the data set
+
+```{r houses}
+
+par(mfrow=c(2,2))
+par(mar=rep(2,4))
+i <- 2
+for (i in 2:81){
+  plot(select(my.house.data,i,'SalePrice'),col='steel blue',main = paste0(colnames(my.house.data)[i]," NAs: ",sum(is.na(select(my.house.data,i)))))
+  points(select(my.rm.data,i,'SalePrice'),col='red',main = paste0(colnames(my.house.data)[i]," NAs: ",sum(is.na(select(my.house.data,i)))))
+}
+```
+
+
+

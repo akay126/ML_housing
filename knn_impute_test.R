@@ -16,15 +16,23 @@ buck_nb = subset(buck_nb,select = -c(predicted.bucket))
 test_na = test[!complete.cases(test), ]
 test_na$Id
 test = kNN(test, k=1)[1:80]
+
+test = subset(test,select = 
+                      -c(MSZoning,Street,Alley,LotShape,LandContour,Utilities,LotConfig,LandSlope,Neighborhood,Condition1,Condition2,BldgType,HouseStyle,RoofStyle,RoofMatl,Exterior1st,Exterior2nd,MasVnrType,ExterQual,ExterCond,Foundation,BsmtQual,BsmtCond,BsmtExposure,BsmtFinType1,BsmtFinType2,Heating,HeatingQC,CentralAir,Electrical,BsmtFullBath,BsmtHalfBath,FullBath,HalfBath,KitchenAbvGr,KitchenQual,Functional,Fireplaces,FireplaceQu,GarageType,GarageFinish,GarageQual,GarageCond,PavedDrive,PoolQC,Fence,MiscFeature,SaleType,SaleCondition))
+data = subset(data,select = 
+                -c(SalePrice,MSZoning,Street,Alley,LotShape,LandContour,Utilities,LotConfig,LandSlope,Neighborhood,Condition1,Condition2,BldgType,HouseStyle,RoofStyle,RoofMatl,Exterior1st,Exterior2nd,MasVnrType,ExterQual,ExterCond,Foundation,BsmtQual,BsmtCond,BsmtExposure,BsmtFinType1,BsmtFinType2,Heating,HeatingQC,CentralAir,Electrical,BsmtFullBath,BsmtHalfBath,FullBath,HalfBath,KitchenAbvGr,KitchenQual,Functional,Fireplaces,FireplaceQu,GarageType,GarageFinish,GarageQual,GarageCond,PavedDrive,PoolQC,Fence,MiscFeature,SaleType,SaleCondition))
+
+
 test = test[-1]
 test$Id = NA
 data = data[-81]
 test = test[,c(80,1:79)]
 colnames(data)
+
 all = dplyr::bind_rows(data,test)
 
 all = kNN(all, k=1)
-clean_test = all[1461:nrow(all),1:80]
+clean_test = all[1461:nrow(all),(1:31)]
 
 model_list = model_map[,c(1,4)]
 clean_test = left_join(clean_test,model_list, by = "Id")
@@ -59,11 +67,11 @@ summary(result$SalePrice)
 a = (log(submission$SalePrice) - log(result$SalePrice))
 summary(a)
 
-b = a[which((a**2)<0.1 & (a**2)> -0.1)]
+b = a[which((a**2)<0.099 & (a**2) > -0.099)]
 sqrt(mean(abs(b)))
 
 
-result_out = result[which(result$SalePrice < 1e5 ),]
+result_out = result[which(result$SalePrice < 1e5 | result$SalePrice > 1e6 ),]
 
 predict_hosuing(clean_test$model[1],subset(clean_test[1,],select= -c(Id,model)))
 
